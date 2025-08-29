@@ -1,544 +1,260 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kiss Cam - Móvil</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimal-ui">
+    <title>Control Móvil - Kiss Cam</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #ff6b9d, #c44569);
-            min-height: 100vh;
-            color: white;
-            touch-action: pan-x pan-y;
-        }
-
-        .container {
-            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            margin: 0;
             display: flex;
             flex-direction: column;
-            position: relative;
-        }
-
-        .header {
-            background: rgba(0, 0, 0, 0.5);
-            padding: 10px 20px;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            color: #333;
             text-align: center;
-            z-index: 100;
         }
 
-        .header h1 {
-            font-size: 1.5em;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-
-        .video-container {
-            flex: 1;
+        #camera-container {
             position: relative;
-            background: #000;
-        }
-
-        #videoPreview {
             width: 100%;
             height: 100%;
-            object-fit: contain;
-            transform: scaleX(-1);
-            /* Mantener la cámara frontal invertida para que el usuario se vea como en un espejo */
-        }
-
-        .zoomed-video {
-            object-fit: cover !important;
-        }
-
-        .overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 50;
-        }
-
-        .controls {
-            position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
             display: flex;
-            align-items: center;
             justify-content: center;
-            gap: 8px;
-            z-index: 100;
+            align-items: center;
+            background-color: #000;
+        }
+
+        #camera-stream {
             width: 100%;
-            padding: 0 10px;
-            flex-wrap: wrap;
-        }
-
-        .effect-controls {
-            margin-top: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            width: 90%;
-            margin-left: 5%;
-        }
-
-        .control-btn {
-            width: 50px;
-            height: 50px;
-            border: none;
-            border-radius: 50%;
-            font-size: 1.2em;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .effect-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 10px;
-            font-size: 1.5em;
-        }
-
-        .btn-record {
-            background: linear-gradient(45deg, #ff6b9d, #c44569);
-            color: white;
-        }
-
-        .btn-capture {
-            background: linear-gradient(45deg, #ffc107, #ff9800);
-            color: white;
-        }
-
-        .btn-overlay {
-            background: linear-gradient(45deg, #ff3838, #ff9f1a);
-            color: white;
-        }
-
-        .btn-flip {
-            background: linear-gradient(45deg, #2ed573, #1e90ff);
-            color: white;
-        }
-
-        .btn-sepia {
-            background: #a0522d;
-            color: white;
-        }
-
-        .btn-clear {
-            background: #8e44ad;
-            color: white;
-        }
-
-        .control-btn:active {
-            transform: scale(0.95);
-        }
-
-        .status {
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
             position: absolute;
-            top: 70px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.7);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            z-index: 100;
-        }
-
-        .status.connected {
-            color: #2ed573;
-        }
-
-        .status.disconnected {
-            color: #ff6b9d;
-        }
-
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: translateX(-50%) scale(1);
-            }
-
-            50% {
-                transform: translateX(-50%) scale(1.1);
-            }
-
-            100% {
-                transform: translateX(-50%) scale(1);
-            }
-        }
-
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 100;
-        }
-
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid #fff;
-            width: 60px;
-            height: 60px;
-            animation: spin 2s linear infinite;
-            margin: 0 auto 20px;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .error {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 100;
-            padding: 20px;
-            background: rgba(255, 0, 0, 0.2);
-            border-radius: 10px;
-        }
-
-        .permission-request {
-            position: fixed;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
+        }
+
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            z-index: 1000;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            color: white;
+            z-index: 10;
         }
 
-        .permission-content {
-            text-align: center;
-            padding: 40px;
-            background: linear-gradient(135deg, #ff6b9d, #c44569);
-            border-radius: 20px;
-            margin: 20px;
+        .btn-group {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 10px;
         }
 
-        .permission-btn {
-            background: white;
-            color: #c44569;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 1.2em;
-            font-weight: bold;
+        button {
+            padding: 15px 25px;
+            font-size: 16px;
             cursor: pointer;
-            margin-top: 20px;
-            transition: all 0.3s ease;
+            border: none;
+            border-radius: 8px;
+            background-color: #ff69b4;
+            color: white;
+            font-weight: bold;
+            transition: background-color 0.3s;
+            margin: 0 5px;
         }
 
-        .permission-btn:hover {
-            transform: scale(1.05);
+        button:hover {
+            background-color: #ff85c1;
+        }
+
+        .zoom-btn {
+            background-color: #5d5dff;
+        }
+        .zoom-btn:hover {
+            background-color: #7a7aff;
+        }
+        
+        .effect-btn {
+            background-color: #ff6600;
+        }
+        .effect-btn:hover {
+            background-color: #ff8533;
+        }
+        
+        input[type="range"] {
+            width: 80%;
+            margin-top: 10px;
+        }
+        
+        .text-input-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        
+        #custom-text {
+            width: 60%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        
+        #send-text-btn {
+            margin-left: 10px;
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+        }
+        
+        #capture-btn {
+            background-color: #3498db;
+        }
+
+        #capture-btn:hover {
+            background-color: #5dade2;
+        }
+
+        #status {
+            color: #ddd;
+            margin-top: 10px;
         }
     </style>
 </head>
-
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📱 Kiss Cam Móvil</h1>
-        </div>
+    <div id="camera-container">
+        <video id="camera-stream" playsinline></video>
+        <div id="controls">
+            <button id="start-btn">
+                <span id="start-text">📹 Iniciar</span>
+            </button>
 
-        <div class="video-container">
-            <video id="videoPreview" autoplay playsinline muted></video>
-            <div class="overlay" id="overlay"></div>
-        </div>
-
-        <div id="status" class="status disconnected">
-            🔄 Conectando...
-        </div>
-
-        <div class="controls">
-            <button id="recordBtn" class="control-btn btn-record" title="Iniciar/Detener transmisión">
-                📹
-            </button>
-            <button id="captureBtn" class="control-btn btn-capture" title="Tomar Foto">
-                📸
-            </button>
-            <button id="flipBtn" class="control-btn btn-flip" title="Cambiar cámara">
-                🔄
-            </button>
-        </div>
-
-        <div class="effect-controls">
-            <button class="control-btn effect-btn" data-effect="hearts" data-sound="heartbeat.mp3"
-                style="background-color: #ff6b9d;">
-                💖
-            </button>
-            <button class="control-btn effect-btn" data-effect="frame1" data-sound="camera-shutter.mp3"
-                style="background-color: #34495e;">
-                🖼️
-            </button>
-            <button class="control-btn effect-btn" data-effect="fireworks" data-sound="fireworks.mp3"
-                style="background-color: #d35400;">
-                🎆
-            </button>
-            <button class="control-btn effect-btn" data-effect="snow" data-sound="sleighbells.mp3"
-                style="background-color: #bdc3c7;">
-                ❄️
-            </button>
-            <button class="control-btn effect-btn btn-clear" data-effect="none" data-sound=""
-                style="background-color: #8e44ad;">
-                ❌
-            </button>
-        </div>
-
-        <div id="loading" class="loading" style="display: none;">
-            <div class="spinner"></div>
-            <p>Iniciando cámara...</p>
-        </div>
-
-        <div id="error" class="error" style="display: none;">
-            <h3>❌ Error</h3>
-            <p id="errorMessage"></p>
-            <button onclick="location.reload()"
-                style="margin-top: 10px; padding: 10px 20px; background: #ff6b9d; color: white; border: none; border-radius: 5px;">
-                Reintentar
-            </button>
-        </div>
-    </div>
-
-    <div id="permissionRequest" class="permission-request" style="display: none;">
-        <div class="permission-content">
-            <h2>📹 Acceso a Cámara</h2>
-            <p>Esta aplicación necesita acceso a tu cámara para funcionar.</p>
-            <button id="grantPermissionBtn" class="permission-btn">Permitir Acceso</button>
+            <div class="btn-group">
+                <button class="zoom-btn" onclick="setZoom(1.0)">Zoom 1x</button>
+                <button class="zoom-btn" onclick="setZoom(1.5)">Zoom 1.5x</button>
+                <button class="zoom-btn" onclick="setZoom(2.0)">Zoom 2x</button>
+            </div>
+            
+            <div class="btn-group">
+                <button class="effect-btn" onclick="setEffect('red_heart')">Corazones</button>
+                <button class="effect-btn" onclick="setEffect('black_and_white')">B&N</button>
+                <button class="effect-btn" onclick="setEffect('sepia')">Sepia</button>
+            </div>
+            
+            <button id="capture-btn" onclick="capturePhoto()">Capturar</button>
+            
+            <div class="text-input-container">
+                <input type="text" id="custom-text" placeholder="Escribe tu mensaje">
+                <button id="send-text-btn">Enviar</button>
+            </div>
+            
+            <div id="status">Esperando...</div>
         </div>
     </div>
 
     <script>
-        const video = document.getElementById('videoPreview');
-        const recordBtn = document.getElementById('recordBtn');
-        const flipBtn = document.getElementById('flipBtn');
-        const captureBtn = document.getElementById('captureBtn');
-        const effectButtons = document.querySelectorAll('.effect-btn');
-        const statusDiv = document.getElementById('status');
-        const loadingDiv = document.getElementById('loading');
-        const errorDiv = document.getElementById('error');
-        const errorMessageDiv = document.getElementById('errorMessage');
+        const video = document.getElementById('camera-stream');
+        let captureInterval = 2000; // 2 segundos entre capturas
 
-        let currentStream = null;
-        let isStreaming = false;
-        let currentCamera = 'user';
-        let sendFrameInterval = null;
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
+        function startCapture() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Tu navegador no soporta la API de MediaDevices');
+                return;
+            }
 
-        let lastDistance = null;
-        let currentZoom = 1.0;
-        const maxZoom = 3.0;
-        const minZoom = 0.5;
-
-        function showError(message) {
-            errorMessageDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            loadingDiv.style.display = 'none';
-        }
-
-        async function sendZoomLevel(zoom) {
-            try {
-                await fetch('/set_zoom', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ zoom: zoom })
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                    document.getElementById('start-btn').style.display = 'none';
+                    sendFrame(); // Inicia el bucle de envío de frames
+                })
+                .catch(err => {
+                    alert('No se pudo acceder a la cámara: ' + err.message);
                 });
-            } catch (e) {
-                console.error("Error al enviar el nivel de zoom:", e);
-            }
         }
+        
+        // --- CÓDIGO ACTUALIZADO: Usa setTimeout para un bucle más robusto ---
+        function sendFrame() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = canvas.toDataURL('image/jpeg', 0.8); // 0.8 es la calidad de compresión
 
-        async function startCamera(facingMode) {
-            try {
-                loadingDiv.style.display = 'block';
-                errorDiv.style.display = 'none';
-                stopSendingFrames();
-
-                if (currentStream) {
-                    currentStream.getTracks().forEach(track => track.stop());
-                }
-
-                const constraints = {
-                    video: {
-                        facingMode: facingMode,
-                        width: { ideal: 1920 },
-                        height: { ideal: 1080 }
-                    }
-                };
-
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                currentStream = stream;
-                video.srcObject = stream;
-                video.play();
-
-                loadingDiv.style.display = 'none';
-                isStreaming = true;
-                statusDiv.textContent = '🟢 Conectado';
-
-                startSendingFrames();
-
-            } catch (err) {
-                console.error("Error al acceder a la cámara:", err);
-                showError("No se pudo acceder a la cámara. Asegúrate de haber dado los permisos.");
-                isStreaming = false;
-                statusDiv.textContent = '🔴 Desconectado';
-            }
+            fetch('/receive_frame', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.status);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            })
+            .finally(() => {
+                // Programa el siguiente envío SÓLO después de que el actual haya terminado
+                setTimeout(sendFrame, captureInterval);
+            });
         }
+        // --- FIN DEL CÓDIGO ACTUALIZADO ---
 
-        function startSendingFrames() {
-            if (sendFrameInterval) {
-                clearInterval(sendFrameInterval);
-            }
-
-            const sendFrame = async () => {
-                if (!video.videoWidth) return;
-
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                const dataURL = canvas.toDataURL('image/jpeg', 0.7);
-
-                try {
-                    await fetch('/receive_frame', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ image: dataURL })
-                    });
-                } catch (e) {
-                    console.error("Error al enviar frame:", e);
-                }
-            };
-
-            // ¡VALOR CAMBIADO AQUÍ! Ahora envía cada 500ms (0.5 segundos)
-            sendFrameInterval = setInterval(sendFrame, 2000);
+        function setZoom(level) {
+            fetch('/set_zoom', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ zoom: level })
+            });
         }
-
-        function stopSendingFrames() {
-            if (sendFrameInterval) {
-                clearInterval(sendFrameInterval);
-                sendFrameInterval = null;
-            }
+        
+        function setEffect(effectName) {
+            fetch('/set_effect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ effect: effectName })
+            });
         }
-
-        recordBtn.addEventListener('click', () => {
-            if (!isStreaming) {
-                startCamera(currentCamera);
-            } else {
-                stopSendingFrames();
-                if (currentStream) {
-                    currentStream.getTracks().forEach(track => track.stop());
-                    currentStream = null;
-                }
-                video.srcObject = null;
-                isStreaming = false;
-                statusDiv.textContent = '🔴 Desconectado';
-            }
-        });
-
-        flipBtn.addEventListener('click', () => {
-            currentCamera = currentCamera === 'user' ? 'environment' : 'user';
-            if (isStreaming) {
-                startCamera(currentCamera);
-            }
-        });
-
-        captureBtn.addEventListener('click', () => {
+        
+        function capturePhoto() {
             fetch('/capture')
                 .then(response => response.json())
                 .then(data => {
-                    if (data.status === 'success') {
-                        alert('¡Foto tomada! Revisa la pantalla de la PC.');
-                    } else {
-                        alert('Error al tomar la foto: ' + data.message);
-                    }
+                    document.getElementById('status').textContent = data.message || "Foto capturada";
                 })
-                .catch(error => console.error('Error:', error));
-        });
+                .catch(error => {
+                    document.getElementById('status').textContent = 'Error al capturar';
+                });
+        }
 
-        effectButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const effectName = button.getAttribute('data-effect');
-                const soundName = button.getAttribute('data-sound');
-                fetch('/set_effect', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ effect: effectName, sound: soundName })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Efecto enviado:', data.effect);
-                        alert(`Efecto "${effectName}" activado.`);
-                    })
-                    .catch(error => console.error('Error al enviar el efecto:', error));
+        document.getElementById('send-text-btn').addEventListener('click', () => {
+            const text = document.getElementById('custom-text').value;
+            fetch('/set_text', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').textContent = data.status === 'success' ? 'Texto enviado!' : 'Error al enviar texto';
             });
         });
 
-        // Lógica para detectar gestos de zoom
-        video.addEventListener('touchstart', (e) => {
-            if (e.touches.length === 2) {
-                lastDistance = Math.hypot(
-                    e.touches[0].pageX - e.touches[1].pageX,
-                    e.touches[0].pageY - e.touches[1].pageY
-                );
-            }
-        });
-
-        video.addEventListener('touchmove', (e) => {
-            if (e.touches.length === 2 && lastDistance) {
-                const newDistance = Math.hypot(
-                    e.touches[0].pageX - e.touches[1].pageX,
-                    e.touches[0].pageY - e.touches[1].pageY
-                );
-                const zoomFactor = newDistance / lastDistance;
-                currentZoom = Math.max(minZoom, Math.min(maxZoom, currentZoom * zoomFactor));
-                lastDistance = newDistance;
-
-                sendZoomLevel(currentZoom);
-            }
-        });
-
-        video.addEventListener('touchend', () => {
-            lastDistance = null;
-        });
-
+        document.getElementById('start-btn').addEventListener('click', startCapture);
     </script>
 </body>
-
 </html>
